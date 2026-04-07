@@ -1,0 +1,34 @@
+# Simple Shift-Reduce Parser
+grammar = {"E+E": "E", "E*E": "E", "(E)": "E", "id": "E"}
+input_str = "id+id*id$"
+stack = "$"
+input_buffer = input_str
+
+print(f"{'Stack':<15} {'Input':<15} {'Action'}")
+
+while True:
+    # Check for Acceptance
+    if stack == "$E" and input_buffer == "$":
+        print(f"{stack:<15} {input_buffer:<15} Accept")
+        break
+    
+    # Try Reduction (Check stack from top for matching grammar RHS)
+    reduced = False
+    for rhs, lhs in grammar.items():
+        if stack.endswith(rhs):
+            stack = stack[:-len(rhs)] + lhs
+            print(f"{stack:<15} {input_buffer:<15} Reduce by {lhs}->{rhs}")
+            reduced = True
+            break
+    
+    if reduced: continue
+
+    # Try Shifting
+    if input_buffer != "$":
+        char = input_buffer[0:2] if input_buffer.startswith("id") else input_buffer[0]
+        stack += char
+        input_buffer = input_buffer[len(char):]
+        print(f"{stack:<15} {input_buffer:<15} Shift")
+    else:
+        print("Error: Parsing Failed")
+        break
