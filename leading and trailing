@@ -1,0 +1,72 @@
+# Leading and Trailing Set Generator for Operator Grammars
+class GrammarProcessor:
+    def __init__(self, productions):
+        self.productions = productions
+        self.non_terminals = list(productions.keys())
+        self.leading = {nt: set() for nt in self.non_terminals}
+        self.trailing = {nt: set() for nt in self.non_terminals}
+
+    def is_terminal(self, char):
+        return not char.isupper() and char != 'e' # 'e' often represents epsilon
+
+    def compute_leading(self):
+        changed = True
+        while changed:
+            changed = False
+            for nt, prods in self.productions.items():
+                for rhs in prods:
+                    # Rule 1: A -> a... or A -> Ba...
+                    # Add first terminal encountered from the left
+                    for i in range(len(rhs)):
+                        if self.is_terminal(rhs[i]):
+                            if rhs[i] not in self.leading[nt]:
+                                self.leading[nt].add(rhs[i])
+                                changed = True
+                            break
+                        # Rule 2: If A -> B... then Leading(A) includes Leading(B)
+                        elif i == 0:
+                            B = rhs[0]
+                            before_size = len(self.leading[nt])
+                            self.leading[nt].update(self.leading.get(B, set()))
+                            if len(self.leading[nt]) > before_size:
+                                changed = True
+
+    def compute_trailing(self):
+        changed = True
+        while changed:
+            changed = False
+            for nt, prods in self.productions.items():
+                for rhs in prods:
+                    # Rule 1: A -> ...a or A -> ...aB
+                    # Add first terminal encountered from the right
+                    for i in range(len(rhs) - 1, -1, -1):
+                        if self.is_terminal(rhs[i]):
+                            if rhs[i] not in self.trailing[nt]:
+                                self.trailing[nt].add(rhs[i])
+                                changed = True
+                            break
+                        # Rule 2: If A -> ...B then Trailing(A) includes Trailing(B)
+                        elif i == len(rhs) - 1:
+                            B = rhs[-1]
+                            before_size = len(self.trailing[nt])
+                            self.trailing[nt].update(self.trailing.get(B, set()))
+                            if len(self.trailing[nt]) > before_size:
+                                changed = True
+
+# Example Usage:
+# Grammar: E -> E+T | T, T -> T*F | F, F -> (E) | id
+grammar = {
+    'E': ['E+T', 'T'],
+    'T': ['T*F', 'F'],
+    'F': ['(E)', 'i'] # 'i' for 'id'
+}
+
+gp = GrammarProcessor(grammar)
+gp.compute_leading()
+gp.compute_trailing()
+
+print("Leading Sets:")
+for nt, s in gp.leading.items(): print(f"{nt}: {s}")
+
+print("\nTrailing Sets:")
+for nt, s in gp.trailing.items(): print(f"{nt}: {s}")
